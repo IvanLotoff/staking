@@ -5,31 +5,32 @@ import { RewardToken } from "../typechain";
 import { Staking } from "../typechain";
 import { LpToken } from "../typechain";
 
-
 describe("Staking", function () {
   let owner: SignerWithAddress;
   let john: SignerWithAddress;
   let nick: SignerWithAddress;
-  let pmknToken: RewardToken;
+  let rewardToken: RewardToken;
   let staking: Staking;
   let lpToken: LpToken;
   
-  beforeEach("Staking",async function () {
+  beforeEach("Staking", async function () {
     const initialLpAmount = 1000;
     const Staking = await ethers.getContractFactory("Staking");
     const PmknToken = await ethers.getContractFactory("RewardToken");
     const LpToken = await ethers.getContractFactory("LpToken");
     lpToken = await LpToken.deploy();
     [owner, john, nick] = await ethers.getSigners();
-    await Promise.all([
-        lpToken.mint(owner.address, initialLpAmount),
-        lpToken.mint(john.address, initialLpAmount),
-        lpToken.mint(nick.address, initialLpAmount)
-    ]);
-    pmknToken = await PmknToken.deploy();
-    staking = await Staking.deploy(lpToken.address, pmknToken.address);
+    rewardToken = await PmknToken.deploy();
+    staking = await Staking.deploy(lpToken.address, rewardToken.address);
 
-    });
+    await Promise.all([
+      lpToken.mint(owner.address, initialLpAmount),
+      lpToken.mint(john.address, initialLpAmount),
+      lpToken.mint(nick.address, initialLpAmount),
+      lpToken.mint(staking.address, initialLpAmount),
+      rewardToken.mint(staking.address, initialLpAmount)
+    ]);
+  });
 
   it("no approved stake", async ()=> {
     await expect(staking.connect(john).stake(100)).to.be.reverted;
@@ -72,7 +73,8 @@ describe("Staking", function () {
     await ethers.provider.send("evm_increaseTime", [20 * 60 * 60 + 1]); 
     await ethers.provider.send("evm_mine", []);
     await staking.connect(john).unstake();
-    // expect(await lpToken.balanceOf(john.address)).to.eq(initialBalance);
+    expect(await lpToken.balanceOf(john.address)).to.eq(initialBalance);
+    await staking.connect(john).claim();
+    expect(await rewardToken.balanceOf(john.address)).to.eq(20);
   })
-
 })

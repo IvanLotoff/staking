@@ -3,7 +3,6 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./RewardToken.sol";
-import "hardhat/console.sol";
 
 contract Staking is Ownable {
 
@@ -79,7 +78,7 @@ contract Staking is Ownable {
     }
 
     modifier stakingNotEmpty(address sender) {
-        require(stakers[sender].stakingBalance > 0, "No stake");
+        require(stakers[sender].stakingBalance > 0 || stakers[sender].unclaimedReward > 0, "No stake");
         _;
     }
 }
